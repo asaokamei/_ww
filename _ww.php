@@ -6,22 +6,6 @@
  * to understand how it works. 
  */
 
-// use as static method. 
-$ww = _ww::each( 
-            array( 1,2,3 ), 
-            function($n) { echo $n . "\n"; } 
-        );
-
-// use as a chain of methods. 
-_ww::chain(  array( 1,2,3 ) )
-    ->each(  function($n) { echo "in chain $n" . "\n"; } )
-    ->get(   $mid )
-    ->map(   function($n) { return $n * 2; } )
-    ->value( $result );
-var_dump( $mid );
-var_dump( $result );
-
-
 class _ww
 {
     private $_wrapped = NULL;  // holds the data
@@ -75,8 +59,9 @@ class _ww
      */
     public function __call( $method, $input ) {
         $arg  = array_merge( array( $this->_wrapped ), $input );
-        if( is_callable( "_wwm::$method") ) {
-            $return = call_user_func_array( "_wwm::$method", $arg ) ;
+        $return = NULL;
+        if( is_callable( "_ww::_{$method}") ) {
+            $return = call_user_func_array( "_ww::_{$method}", $arg ) ;
         }
         if( !is_null( $return ) ) {
             $this->_wrapped = $return;
@@ -92,26 +77,23 @@ class _ww
      * @return mix        result.  
      */
     public static function __callStatic( $method, $arguments ) {
-        if( is_callable( "_wwm::$method") ) {
-            return call_user_func_array( "_wwm::$method", $arguments );
+        if( is_callable( "_ww::_{$method}") ) {
+            return call_user_func_array( "_ww::_{$method}", $arguments );
         }
+        return NULL;
     }
-	// +--------------------------------------------------------------- +
-}
-
-class _wwm
-{
 	// +--------------------------------------------------------------- +
     /** 
      * Invoke the iterator on each item in the collection
      * @param array $collection
      * @param closure $iterator 
      */
-    static public function each( $collection, $iterator ) {
+    static public function _each( $collection, $iterator ) {
         if( !empty( $collection ) )
         foreach($collection as $k=>$v) {
             call_user_func($iterator, $v, $k, $collection);
         }
+        return NULL;
     }
     
 	// +--------------------------------------------------------------- +
@@ -121,7 +103,7 @@ class _wwm
      * @param closure $iterator
      * @return array 
      */
-    static public function map( $collection, $iterator ) {
+    static public function _map( $collection, $iterator ) {
         $return = array();
         if( !empty( $collection ) )
         foreach( $collection as $k => $v ) {
@@ -130,6 +112,36 @@ class _wwm
         return $return;
     }
     
+	// +--------------------------------------------------------------- +
+    /**
+     * Sort the collection by return values from the iterator
+     * @param type $collection
+     * @param type $iterator
+     * @return type 
+     */
+    public function _sortBy( $collection, $iterator ) {
+        $results = array();
+        foreach( $collection as $k => $item ) {
+            $results[$k] = $iterator( $item );
+        }
+        asort($results);
+        foreach( $results as $k => $v ) {
+            $results[$k] = $collection[$k];
+        }
+        return $results;
+    }
+    
+	// +--------------------------------------------------------------- +
+    /**
+     * Sort the collection by return values from the iterator
+     * @param type $collection
+     * @param type $iterator
+     * @return type 
+     */
+    public function _sort( $collection, $iterator ) {
+        usort( $collection, $iterator );
+        return $collection;
+    }
 	// +--------------------------------------------------------------- +
 }
 
